@@ -1,0 +1,16 @@
+version: '3.1'
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: p@ssword
+      POSTGRES_USER: admin
+      POSTGRES_DB: reviews_api
+
+  server:
+    image: alecchampaign/server
+    restart: always
+    ports:
+      - 8080:8080
