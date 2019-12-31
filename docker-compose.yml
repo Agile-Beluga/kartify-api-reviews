@@ -10,7 +10,7 @@ services:
       POSTGRES_DB: reviews_api
 
   server:
-    image: alecchampaign/server
+    image: alecchampaign/server:1.0
     restart: always
     ports:
-      - 8080:8080
+      - 3000:3000
