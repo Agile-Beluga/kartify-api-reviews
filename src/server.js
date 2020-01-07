@@ -24,35 +24,37 @@ app.get('/reviews/:product_id/list', (req, res) => {
 
       new Promise((resolve, reject) => {
         const queries = [];
-        result.results = result.results.map(review => {
-          const parsedReview = {
-            review_id: review.id,
-            rating: review.rating,
-            summary: review.summary,
-            recommended: review.recommended,
-            response:
-              review.response === null || review.response === 'null'
-                ? ''
-                : review.response,
-            body: review.body,
-            date: new Date(review.date).toISOString(),
-            reviewer_name: review.reviewer_name,
-            helpfulness: review.helpfulness
-          };
+        result.results = result.results
+          .filter(review => review.reported === 0)
+          .map(review => {
+            const parsedReview = {
+              review_id: review.id,
+              rating: review.rating,
+              summary: review.summary,
+              recommended: review.recommended,
+              response:
+                review.response === null || review.response === 'null'
+                  ? ''
+                  : review.response,
+              body: review.body,
+              date: new Date(review.date).toISOString(),
+              reviewer_name: review.reviewer_name,
+              helpfulness: review.helpfulness
+            };
 
-          queries.push(
-            db
-              .query(`SELECT * FROM photos WHERE review_id = ${review.id}`)
-              .then(data => {
-                parsedReview.photos = data.rows.map(row => ({
-                  id: row.id,
-                  url: row.url
-                }));
-              })
-              .catch(err => console.error(err))
-          );
-          return parsedReview;
-        });
+            queries.push(
+              db
+                .query(`SELECT * FROM photos WHERE review_id = ${review.id}`)
+                .then(data => {
+                  parsedReview.photos = data.rows.map(row => ({
+                    id: row.id,
+                    url: row.url
+                  }));
+                })
+                .catch(err => console.error(err))
+            );
+            return parsedReview;
+          });
         Promise.all(queries)
           .then(() => resolve())
           .catch(err => reject(err));

@@ -23,6 +23,12 @@ describe('GET /reviews/:product_id/list', () => {
       return chakram.wait();
     });
   }).timeout(9000);
+  it('should filter out reported reviews', () => {
+    return chakram.get('http://localhost:3000/reviews/7/list').then(res => {
+      expect(res).to.have.status(200);
+      expect(res.body.results.length).to.equal(1);
+    });
+  }).timeout(7000);
   it('should handle GET requests with a page param', () => {
     return chakram
       .get('http://localhost:3000/reviews/20/list?page=1')
