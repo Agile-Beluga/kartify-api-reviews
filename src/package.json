@@ -4,7 +4,7 @@
   "description": "The reviews API for Kartify's back-end.",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha ../__tests__/endpoints.test.js",
     "start": "nodemon server.js"
   },
   "repository": {
@@ -21,6 +21,11 @@
   "dependencies": {
     "csv-parser": "^2.3.2",
     "express": "^4.17.1",
-    "nodemon": "^2.0.2"
+    "nodemon": "^2.0.2",
+    "pg": "^7.17.0",
+    "pg-promise": "^10.3.2"
+  },
+  "devDependencies": {
+    "nyc": "^15.0.0"
   }
 }
