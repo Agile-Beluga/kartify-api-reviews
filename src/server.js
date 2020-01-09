@@ -3,6 +3,7 @@ const app = express();
 const parser = require('body-parser');
 const PORT = process.env.port || 3000;
 const db = require('./db');
+const { incrementIfNotExist } = require('./helpers.js');
 db.connect(err => console.log(err || 'DB connected'));
 
 app.use(parser.json());
@@ -90,6 +91,65 @@ app.get('/reviews/:product_id/list', (req, res) => {
         .catch(err => console.error(err));
     })
     .catch(err => res.send(err));
+});
+
+app.get('/reviews/:product_id/meta', (req, res) => {
+  const product_id = req.params.product_id;
+  db.query(
+    `select recommended, review_id, value, name, rating, value, characteristic_id
+    from (select *
+      from (select id, recommended, rating
+        from reviews
+        where product_id = ${product_id}) as reviews inner join ratings on ratings.review_id = reviews.id) as ratings inner join characteristics as char on char.id = ratings.characteristic_id`
+  )
+    .then(({ rows }) => {
+      const result = {
+        product_id,
+        ratings: {},
+        recommended: {},
+        characteristics: {}
+      };
+
+      const cache = { characteristics: {}, numOfReviews: 0 };
+      rows.forEach(entry => {
+        if (!cache.hasOwnProperty(entry.review_id)) {
+          result.ratings[entry.rating] = incrementIfNotExist(
+            result.ratings,
+            entry.rating
+          );
+          result.recommended[entry.recommended] = incrementIfNotExist(
+            result.recommended,
+            entry.recommended
+          );
+
+          cache[entry.review_id] = entry.review_id;
+          cache.numOfReviews += 1;
+        } else {
+          cache[entry.review_id] = entry.review_id;
+        }
+        if (cache.characteristics.hasOwnProperty(entry.name)) {
+          cache.characteristics[entry.name].value += entry.value;
+        } else {
+          cache.characteristics[entry.name] = {
+            id: entry.characteristic_id,
+            value: entry.value
+          };
+        }
+      });
+      for (let char in cache.characteristics) {
+        const avg = cache.characteristics[char].value / cache.numOfReviews;
+        result.characteristics[char] = {
+          id: cache.characteristics[char].id,
+          value: avg.toFixed(4)
+        };
+      }
+
+      res.status(200).json(result);
+    })
+    .catch(err => {
+      console.error(err);
+      res.sendStatus(404);
+    });
 });
 
 app.listen(PORT, err => console.log(err || `Listening on port ${PORT}.`));
