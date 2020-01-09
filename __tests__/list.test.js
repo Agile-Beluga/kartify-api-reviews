@@ -19,8 +19,6 @@ describe('GET /reviews/:product_id/list', () => {
       expect(review.photos[0].id).to.be.a('number');
       expect(review.photos[0]).to.have.property('url');
       expect(review.photos[0].url).to.be.a('string');
-
-      return chakram.wait();
     });
   }).timeout(9000);
   it('should filter out reported reviews', () => {
