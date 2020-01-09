@@ -112,6 +112,7 @@ app.get('/reviews/:product_id/meta', (req, res) => {
 
       const cache = { characteristics: {}, numOfReviews: 0 };
       rows.forEach(entry => {
+        // if review hasn't already been encountered, add data to result
         if (!cache.hasOwnProperty(entry.review_id)) {
           result.ratings[entry.rating] = incrementIfNotExist(
             result.ratings,
@@ -127,6 +128,9 @@ app.get('/reviews/:product_id/meta', (req, res) => {
         } else {
           cache[entry.review_id] = entry.review_id;
         }
+
+        // can't use incrementIfNotExist here due to different behavior in `else` block
+        // essentially, we're just keeping track of the characteristic_id and total value for a given characteristic
         if (cache.characteristics.hasOwnProperty(entry.name)) {
           cache.characteristics[entry.name].value += entry.value;
         } else {
@@ -136,6 +140,8 @@ app.get('/reviews/:product_id/meta', (req, res) => {
           };
         }
       });
+
+      // get an average value and package it with the characteristic_id for each characteristic
       for (let char in cache.characteristics) {
         const avg = cache.characteristics[char].value / cache.numOfReviews;
         result.characteristics[char] = {
