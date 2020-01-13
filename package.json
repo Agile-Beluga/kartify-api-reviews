@@ -1,0 +1,24 @@
+{
+  "name": "kartify-api-reviews",
+  "version": "1.0.0",
+  "description": "The reviews API for Kartify's back-end.",
+  "main": "etl.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agile-Beluga/kartify-api-reviews.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Agile-Beluga/kartify-api-reviews/issues"
+  },
+  "homepage": "https://github.com/Agile-Beluga/kartify-api-reviews#readme",
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^7.0.0"
+  }
+}
