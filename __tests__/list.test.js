@@ -1,16 +1,16 @@
 const chakram = require('chakram'),
   expect = chakram.expect;
+const axios = require('axios');
 
 describe('GET /reviews/:product_id/list', () => {
   it('should handle GET requests with a product_id', () => {
-    return chakram.get('http://localhost:3000/reviews/15/list').then(res => {
-      expect(res).to.have.status(200);
-      expect(res).to.not.have.header('non-existing-header');
-      expect(res.body.product).to.equal('15');
-      expect(res.body.page).to.equal(0);
-      expect(res.body.count).to.equal(5);
-      expect(res.body.results.length).to.be.above(0);
-      const review = res.body.results[0];
+    return axios.get('http://localhost:3000/reviews/15/list').then(res => {
+      expect(res.status).to.equal(200);
+      expect(res.data.product).to.equal('15');
+      expect(res.data.page).to.equal(0);
+      expect(res.data.count).to.equal(5);
+      expect(res.data.results.length).to.be.above(0);
+      const review = res.data.results[0];
       expect(review.response).to.equal('');
       expect(review.rating).to.be.a('number');
       expect(review).to.have.property('review_id');
@@ -20,13 +20,13 @@ describe('GET /reviews/:product_id/list', () => {
       expect(review.photos[0]).to.have.property('url');
       expect(review.photos[0].url).to.be.a('string');
     });
-  }).timeout(9000);
+  });
   it('should filter out reported reviews', () => {
     return chakram.get('http://localhost:3000/reviews/7/list').then(res => {
       expect(res).to.have.status(200);
       expect(res.body.results.length).to.equal(1);
     });
-  }).timeout(7000);
+  });
   it('should handle GET requests with a page param', () => {
     return chakram
       .get('http://localhost:3000/reviews/20/list?page=1')
@@ -43,7 +43,7 @@ describe('GET /reviews/:product_id/list', () => {
             return chakram.wait();
           });
       });
-  }).timeout(20000);
+  });
   it('should handle GET requests with a count param', () => {
     return chakram
       .get('http://localhost:3000/reviews/20/list?count=10')
@@ -53,7 +53,7 @@ describe('GET /reviews/:product_id/list', () => {
         expect(res.body.results.length).to.be.above(5);
         return chakram.wait();
       });
-  }).timeout(9000);
+  });
   describe('should sort reviews according to sort param', () => {
     it('should sort reviews by newest', () => {
       return chakram
@@ -68,7 +68,7 @@ describe('GET /reviews/:product_id/list', () => {
             expect(time).is.above(prevTime);
           });
         });
-    }).timeout(9000);
+    });
     it('should sort reviews by helpfulness', () => {
       return chakram
         .get('http://localhost:3000/reviews/2/list?sort=helpful')
@@ -82,7 +82,7 @@ describe('GET /reviews/:product_id/list', () => {
             expect(helpfulness >= nextHelpfulness).to.equal(true);
           });
         });
-    }).timeout(9000);
+    });
     it('should sort reviews by relevance', () => {
       return chakram
         .get('http://localhost:3000/reviews/2/list?sort=relevant')
@@ -98,6 +98,6 @@ describe('GET /reviews/:product_id/list', () => {
             expect(relevance >= nextRelevance).to.equal(true);
           });
         });
-    }).timeout(9000);
+    });
   });
 });
