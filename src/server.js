@@ -3,6 +3,7 @@ const app = express();
 const parser = require('body-parser');
 const PORT = process.env.port || 3000;
 const db = require('./db');
+const { incrementIfNotExist } = require('./helpers.js');
 db.connect(err => console.log(err || 'DB connected'));
 
 app.use(parser.json());
@@ -24,35 +25,37 @@ app.get('/reviews/:product_id/list', (req, res) => {
 
       new Promise((resolve, reject) => {
         const queries = [];
-        result.results = result.results.map(review => {
-          const parsedReview = {
-            review_id: review.id,
-            rating: review.rating,
-            summary: review.summary,
-            recommended: review.recommended,
-            response:
-              review.response === null || review.response === 'null'
-                ? ''
-                : review.response,
-            body: review.body,
-            date: new Date(review.date).toISOString(),
-            reviewer_name: review.reviewer_name,
-            helpfulness: review.helpfulness
-          };
+        result.results = result.results
+          .filter(review => review.reported === 0)
+          .map(review => {
+            const parsedReview = {
+              review_id: review.id,
+              rating: review.rating,
+              summary: review.summary,
+              recommended: review.recommended,
+              response:
+                review.response === null || review.response === 'null'
+                  ? ''
+                  : review.response,
+              body: review.body,
+              date: new Date(review.date).toISOString(),
+              reviewer_name: review.reviewer_name,
+              helpfulness: review.helpfulness
+            };
 
-          queries.push(
-            db
-              .query(`SELECT * FROM photos WHERE review_id = ${review.id}`)
-              .then(data => {
-                parsedReview.photos = data.rows.map(row => ({
-                  id: row.id,
-                  url: row.url
-                }));
-              })
-              .catch(err => console.error(err))
-          );
-          return parsedReview;
-        });
+            queries.push(
+              db
+                .query(`SELECT * FROM photos WHERE review_id = ${review.id}`)
+                .then(data => {
+                  parsedReview.photos = data.rows.map(row => ({
+                    id: row.id,
+                    url: row.url
+                  }));
+                })
+                .catch(err => console.error(err))
+            );
+            return parsedReview;
+          });
         Promise.all(queries)
           .then(() => resolve())
           .catch(err => reject(err));
@@ -88,6 +91,71 @@ app.get('/reviews/:product_id/list', (req, res) => {
         .catch(err => console.error(err));
     })
     .catch(err => res.send(err));
+});
+
+app.get('/reviews/:product_id/meta', (req, res) => {
+  const product_id = req.params.product_id;
+  db.query(
+    `select recommended, review_id, value, name, rating, value, characteristic_id
+    from (select *
+      from (select id, recommended, rating
+        from reviews
+        where product_id = ${product_id}) as reviews inner join ratings on ratings.review_id = reviews.id) as ratings inner join characteristics as char on char.id = ratings.characteristic_id`
+  )
+    .then(({ rows }) => {
+      const result = {
+        product_id,
+        ratings: {},
+        recommended: {},
+        characteristics: {}
+      };
+
+      const cache = { characteristics: {}, numOfReviews: 0 };
+      rows.forEach(entry => {
+        // if review hasn't already been encountered, add data to result
+        if (!cache.hasOwnProperty(entry.review_id)) {
+          result.ratings[entry.rating] = incrementIfNotExist(
+            result.ratings,
+            entry.rating
+          );
+          result.recommended[entry.recommended] = incrementIfNotExist(
+            result.recommended,
+            entry.recommended
+          );
+
+          cache[entry.review_id] = entry.review_id;
+          cache.numOfReviews += 1;
+        } else {
+          cache[entry.review_id] = entry.review_id;
+        }
+
+        // can't use incrementIfNotExist here due to different behavior in `else` block
+        // essentially, we're just keeping track of the characteristic_id and total value for a given characteristic
+        if (cache.characteristics.hasOwnProperty(entry.name)) {
+          cache.characteristics[entry.name].value += entry.value;
+        } else {
+          cache.characteristics[entry.name] = {
+            id: entry.characteristic_id,
+            value: entry.value
+          };
+        }
+      });
+
+      // get an average value and package it with the characteristic_id for each characteristic
+      for (let char in cache.characteristics) {
+        const avg = cache.characteristics[char].value / cache.numOfReviews;
+        result.characteristics[char] = {
+          id: cache.characteristics[char].id,
+          value: avg.toFixed(4)
+        };
+      }
+
+      res.status(200).json(result);
+    })
+    .catch(err => {
+      console.error(err);
+      res.sendStatus(404);
+    });
 });
 
 app.listen(PORT, err => console.log(err || `Listening on port ${PORT}.`));
