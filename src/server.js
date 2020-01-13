@@ -1,110 +1,55 @@
 const express = require('express');
 const app = express();
 const parser = require('body-parser');
-const PORT = process.env.port || 3000;
-const db = require('./db');
+const PORT = process.env.PORT || 3000;
 const { incrementIfNotExist } = require('./helpers.js');
-db.connect(err => console.log(err || 'DB connected'));
+const {
+  getAllReviews,
+  getPhotosForReview,
+  getProductMeta,
+  addReview,
+  query
+} = require('./models.js');
 
 app.use(parser.json());
 
 app.get('/reviews/:product_id/list', (req, res) => {
   const prodId = req.params.product_id;
-  const offset = req.query.page ? req.query.page * (req.query.count || 5) : 0;
-  db.query(
-    `SELECT * FROM reviews WHERE product_id = ${prodId} LIMIT ${req.query
-      .count || 5} OFFSET ${offset}`
-  )
-    .then(data => {
-      const result = {
-        results: data.rows,
-        product: `${prodId}`,
-        count: Number(req.query.count) || 5,
-        page: Number(req.query.page) || 0
-      };
-
-      new Promise((resolve, reject) => {
-        const queries = [];
-        result.results = result.results
-          .filter(review => review.reported === 0)
-          .map(review => {
-            const parsedReview = {
-              review_id: review.id,
-              rating: review.rating,
-              summary: review.summary,
-              recommended: review.recommended,
-              response:
-                review.response === null || review.response === 'null'
-                  ? ''
-                  : review.response,
-              body: review.body,
-              date: new Date(review.date).toISOString(),
-              reviewer_name: review.reviewer_name,
-              helpfulness: review.helpfulness
-            };
-
-            queries.push(
-              db
-                .query(`SELECT * FROM photos WHERE review_id = ${review.id}`)
-                .then(data => {
-                  parsedReview.photos = data.rows.map(row => ({
-                    id: row.id,
-                    url: row.url
-                  }));
-                })
-                .catch(err => console.error(err))
-            );
-            return parsedReview;
-          });
-        Promise.all(queries)
-          .then(() => resolve())
-          .catch(err => reject(err));
-      })
-        .then(() => {
-          if (req.query.sort === 'newest') {
-            result.results.sort((a, b) => {
-              return new Date(a.date).getTime() > new Date(b.date).getTime()
-                ? -1
-                : 1;
-            });
-          }
-          if (req.query.sort === 'helpful') {
-            result.results.sort((a, b) =>
-              a.helpfulness > b.helpfulness ? -1 : 1
-            );
-          }
-          if (req.query.sort === 'relevant') {
-            result.results.sort((a, b) => {
-              const aRelevance =
-                new Date(a.date).getTime() +
-                (a.helpfulness * 2) / new Date(a.date).getTime() +
-                a.helpfulness;
-              const bRelevance =
-                new Date(b.date).getTime() +
-                (b.helpfulness * 2) / new Date(b.date).getTime() +
-                b.helpfulness;
-              return aRelevance > bRelevance ? -1 : 1;
-            });
+  getAllReviews(prodId, req.query.sort, req.query.page, req.query.count)
+    .then(reviews => {
+      const queries = [];
+      for (let review of reviews) {
+        queries.push(
+          getPhotosForReview(review.review_id).catch(err => res.sendStatus(500))
+        );
+      }
+      Promise.all(queries)
+        .then(photos => {
+          const result = {
+            results: reviews,
+            product: `${prodId}`,
+            count: Number(req.query.count) || 5,
+            page: Number(req.query.page) || 0
+          };
+          for (let i = 0; i < photos.length; i++) {
+            result.results[i].photos = photos[i].rows;
           }
           res.status(200).json(result);
         })
-        .catch(err => console.error(err));
+        .catch(err => {
+          console.error(err);
+          res.sendStatus(500);
+        });
     })
-    .catch(err => res.send(err));
+    .catch(() => res.sendStatus(500));
 });
 
 app.get('/reviews/:product_id/meta', (req, res) => {
-  const product_id = req.params.product_id;
-  db.query(
-    `select recommended, review_id, value, name, rating, value, characteristic_id
-    from (select *
-      from (select id, recommended, rating
-        from reviews
-        where product_id = ${product_id}) as reviews inner join ratings on ratings.review_id = reviews.id) as ratings inner join characteristics as char on char.id = ratings.characteristic_id`
-  )
-    .then(({ rows }) => {
+  const prodId = req.params.product_id;
+  getProductMeta(prodId)
+    .then(rows => {
       const result = {
-        product_id,
+        prodId,
         ratings: {},
         recommended: {},
         characteristics: {}
@@ -152,6 +97,50 @@ app.get('/reviews/:product_id/meta', (req, res) => {
 
       res.status(200).json(result);
     })
+    .catch(err => {
+      console.error(err);
+      res.sendStatus(500);
+    });
+});
+
+app.post('/reviews/:product_id', (req, res) => {
+  const prodId = req.params.product_id;
+
+  let insertPhotosQuery = `INSERT INTO photos (review_id, url) VALUES`;
+  req.body.photos.forEach((photoUrl, index) => {
+    if (index !== 0) insertPhotosQuery += ', ';
+    insertPhotosQuery += `((select MAX(id) FROM reviews), '${photoUrl}')`;
+  });
+  let insertRatingsQuery = `INSERT INTO ratings (characteristic_id, review_id, value) VALUES`;
+  Object.keys(req.body.characteristics).forEach((char, index) => {
+    if (index !== 0) insertRatingsQuery += ', ';
+    insertRatingsQuery += `(${char}, (select MAX(id) FROM reviews), ${req.body.characteristics[char]})`;
+  });
+
+  addReview(prodId, insertPhotosQuery, insertRatingsQuery, req.body)
+    .then(() => {
+      res.sendStatus(201);
+    })
+    .catch(err => {
+      console.error(err);
+      res.sendStatus(500);
+    });
+});
+
+app.put('/reviews/helpful/:review_id', (req, res) => {
+  const queryStr = `UPDATE reviews SET helpfulness = helpfulness + 1 WHERE id = ${req.params.review_id}`;
+  query(queryStr)
+    .then(() => res.sendStatus(201))
+    .catch(err => {
+      console.error(err);
+      res.sendStatus(404);
+    });
+});
+
+app.put('/reviews/report/:review_id', (req, res) => {
+  const queryStr = `UPDATE reviews SET reported = 1 WHERE id = ${req.params.review_id}`;
+  query(queryStr)
+    .then(() => res.sendStatus(201))
     .catch(err => {
       console.error(err);
       res.sendStatus(404);
