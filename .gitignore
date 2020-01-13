@@ -1,5 +1,4 @@
 node_modules
-api_data/characteristic_reviews.csv
-api_data/characteristics.csv
-api_data/reviews_photos.csv
-api_data/reviews.csv
+database/api_data
+database/deploy-schema.sql
+docker-compose.yml
