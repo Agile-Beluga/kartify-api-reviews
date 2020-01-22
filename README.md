@@ -40,7 +40,38 @@ This command will load the schema into PostgreSQL, copying data from the CSV fil
 Congratulations, you have successfully installed and configured Kartify API - Reviews!
 
 ### Kubernetes
+If you wish to install Kartify API - Reviews as a Kubernetes cluster, a `server_template.yaml` file is includes for easy installation. Please note that this method presupposes a couple of caveats:
+1. You have a PostgreSQL DB accessible by a public IP (most likely deployed), as the database isn't part of the cluster. See [database setup instructions for Docker](####Database ETL) for more information on how to setup a PostgreSQL container.
+2. You have installed minikube.
 
+The first step to configure the cluster is to rename the `server_template.yaml` file to `server.yaml`. Within `server.yaml`, configure the `<DATABASE IP>`, `<DATABASE USER>`, and `<DATABASE PASSWORD>` server environment variables to match your external database configuration.
+
+Next, run
+```
+minikube start vm-driver=none
+```
+to start minikube. For the sake of simplicity, a virtual machine driver is not confgiured.
+
+After minikube starts up, apply your configuration by running the following in the application's root directory:
+```
+kubectl apply -f src/server.yaml
+```
+Now that you've applied your configuration changes, make sure the changes were applied correctly by running:
+```
+kubectl get services
+```
+You should see four services running:
+```
+kubernetes
+postgres-entypoint
+redis-entrypoint
+server-entrypoint
+```
+If the `EXTERNAL-IP` field for the `server` service is marked as `<pending>`, run the following command to access the pod's interface:
+```
+minikube tunnel
+```
+Lastly, just make sure that you make all your RESTful requests to the IP address in the `EXTERNAL-IP` field, and you're good to go!
 
 ## Usage
 
