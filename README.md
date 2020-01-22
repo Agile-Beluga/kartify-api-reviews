@@ -12,7 +12,7 @@ Kartify API is a back-end responsible for serving millions of records at scale t
 [License](#License)
 
 ## Description
-Kartify API is an API backend designed to scale in order to serve over a thousand request per second. The Reviews module in particular serves user review data for over a million products.
+Kartify API is an API backend designed to scale in order to serve over a thousand requests per second. The Reviews module in particular serves user review data for over a million products.
 
 The server is built using Node.js / Express and uses a PostgreSQL database for storing all review data. Redis is used to cache commonly accessed data according to a Least Recently Used (LRU) policy. Finally, the entire application is containerized using Docker and ready to be deployed as a Kubernetes cluster with load balancing.  
 
