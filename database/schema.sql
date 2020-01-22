@@ -54,16 +54,15 @@ COPY ratings FROM '/api_data/characteristic_reviews.csv'
 WITH DELIMITER ',' CSV HEADER;
 
 -- Force the outdated sequence pointers to point at the correct indices
-SELECT SETVAL('ratings_id_seq', COALESCE((SELECT MAX(id)+1 FROM ratings), 1), false);
 SELECT SETVAL('photos_id_seq', COALESCE((SELECT MAX(id) + 1 FROM photos), 1), false);
-SELECT SETVAL('characteristics_id_seq', COALESCE((SELECT MAX(id) + 1 FROM characteristics), 1), false);
 SELECT SETVAL('reviews_id_seq', COALESCE((SELECT MAX(id) + 1 FROM reviews), 1), false);
+SELECT SETVAL('ratings_id_seq', COALESCE((SELECT MAX(id) + 1 FROM ratings), 1), false);
+SELECT SETVAL('characteristics_id_seq', COALESCE((SELECT MAX(id) + 1 FROM characteristics), 1), false);
 
-CREATE INDEX char_id ON ratings (characteristic_id);
-CREATE INDEX rev_rating_id ON ratings (review_id);
-CREATE INDEX rev_photos_id ON photos (review_id);
-CREATE INDEX rating_value ON ratings (value);
-CREATE INDEX char_name ON characteristics (name);
-CREATE INDEX rev_rating ON reviews (rating);
-CREATE INDEX recommended_reviews ON reviews (recommended);
+CREATE INDEX review_id_photos ON photos (review_id);
 CREATE INDEX product_id_reviews ON reviews (product_id);
+CREATE INDEX reported_reviews ON reviews (reported);
+CREATE INDEX id_reviews ON reviews (id);
+CREATE INDEX id_char on characteristics (id);
+CREATE INDEX char_id_ratings on ratings (characteristic_id);
+CREATE INDEX char_id ON characteristics (id);

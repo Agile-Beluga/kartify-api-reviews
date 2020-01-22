@@ -1,4 +1,5 @@
 node_modules
 database/api_data
 database/deploy-schema.sql
-docker-compose.yml
+docker-compose.yaml
+server.yaml

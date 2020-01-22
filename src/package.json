@@ -20,12 +20,14 @@
   "homepage": "https://github.com/Agile-Beluga/kartify-api-reviews#readme",
   "dependencies": {
     "axios": "^0.19.1",
+    "cors": "^2.8.5",
     "csv-parser": "^2.3.2",
     "express": "^4.17.1",
     "nodemon": "^2.0.2",
     "pg": "^7.17.0",
     "pg-pool": "^2.0.9",
-    "pg-promise": "^10.3.2"
+    "pg-promise": "^10.3.2",
+    "redis": "^2.8.0"
   },
   "devDependencies": {
     "nyc": "^15.0.0"

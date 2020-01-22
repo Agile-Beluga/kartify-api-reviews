@@ -1,32 +1,46 @@
 const { parseReviews, getDate } = require('./helpers.js');
 const pool = require('./db');
+const client = require('redis').createClient(
+  process.env.REDIS_PORT || 6379,
+  process.env.REDIS_HOST || 'localhost'
+);
 
-const query = queryString => {
-  return pool.connect().then(client => {
-    return client
-      .query(queryString)
-      .then(data => {
-        client.release();
-        return data;
-      })
-      .catch(err => {
-        console.error(err);
-        client.release();
-        throw err;
-      });
-  });
+const query = (queryString, res) => {
+  return pool
+    .connect()
+    .then(client => {
+      return client
+        .query(queryString)
+        .then(data => {
+          client.release();
+          return data;
+        })
+        .catch(err => {
+          console.error(err);
+          client.release();
+          res.send(err);
+          throw err;
+        });
+    })
+    .catch(err => {
+      res.send(err);
+      console.error(err);
+      throw err;
+    });
 };
 
 module.exports.query = query;
 
-module.exports.getAllReviews = (prodId, sort, page, count) => {
+module.exports.getAllReviews = (prodId, sort, page, count, res) => {
   return query(
-    `SELECT * FROM reviews WHERE product_id = ${prodId} AND reported = 0`
+    `SELECT * FROM reviews WHERE product_id = ${prodId} AND reported = 0`,
+    res
   )
     .then(({ rows }) => {
       return parseReviews(rows, sort, page, count);
     })
     .catch(err => {
+      res.sendStatus(500);
       console.error(err);
       throw err;
     });
@@ -46,9 +60,11 @@ module.exports.getProductMeta = prodId => {
   from (select *
     from (select id, recommended, rating
       from reviews
-      where product_id = ${prodId}) as reviews inner join ratings on ratings.review_id = reviews.id) as ratings inner join characteristics as char on char.id = ratings.characteristic_id`;
+      where product_id = ${prodId}) as reviews inner join ratings on ratings.review_id = reviews.id) as ratings inner join characteristics as char on char.id = ratings.characteristic_id;`;
   return query(queryStr)
-    .then(({ rows }) => rows)
+    .then(({ rows }) => {
+      return rows;
+    })
     .catch(err => {
       console.error(err);
       throw err;
@@ -79,5 +95,15 @@ module.exports.addReview = (
   return query(transaction).catch(err => {
     console.error(err);
     throw err;
+  });
+};
+
+module.exports.checkCache = url => {
+  return new Promise((resolve, reject) => {
+    client.get(url, (err, data) => {
+      if (err) reject(err);
+      if (data) resolve(JSON.parse(data));
+      else reject();
+    });
   });
 };
