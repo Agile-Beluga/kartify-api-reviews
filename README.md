@@ -74,7 +74,7 @@ minikube tunnel
 Lastly, just make sure that you make all your RESTful requests to the IP address in the `EXTERNAL-IP` field, and you're good to go!
 
 ## Usage
-[Documentation for the Reviews API can be found here.](https://gist.github.com/trentgoing/409c2d76ce8e187e2132e45d9bed4605#file-reviews_api-md
+[Documentation for the Reviews API can be found here.](https://gist.github.com/trentgoing/409c2d76ce8e187e2132e45d9bed4605#file-reviews_api-md)
 
 ## License
 Copyright (c) Alec Champaign
