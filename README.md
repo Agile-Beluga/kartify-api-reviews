@@ -41,7 +41,7 @@ Congratulations, you have successfully installed and configured Kartify API - Re
 
 ### Kubernetes
 If you wish to install Kartify API - Reviews as a Kubernetes cluster, a `server_template.yaml` file is includes for easy installation. Please note that this method presupposes a couple of caveats:
-1. You have a PostgreSQL DB accessible by a public IP (most likely deployed), as the database isn't part of the cluster. See [database setup instructions for Docker](####Database ETL) for more information on how to setup a PostgreSQL container.
+1. You have a PostgreSQL DB accessible by a public IP (most likely deployed), as the database isn't part of the cluster. See the aforementioned database setup instructions for Docker above for more information on how to setup a PostgreSQL container.
 2. You have installed minikube.
 
 The first step to configure the cluster is to rename the `server_template.yaml` file to `server.yaml`. Within `server.yaml`, configure the `<DATABASE IP>`, `<DATABASE USER>`, and `<DATABASE PASSWORD>` server environment variables to match your external database configuration.
@@ -74,6 +74,7 @@ minikube tunnel
 Lastly, just make sure that you make all your RESTful requests to the IP address in the `EXTERNAL-IP` field, and you're good to go!
 
 ## Usage
+[Documentation for the Reviews API can be found here.](https://gist.github.com/trentgoing/409c2d76ce8e187e2132e45d9bed4605#file-reviews_api-md
 
 ## License
 Copyright (c) Alec Champaign
