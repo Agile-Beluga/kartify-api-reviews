@@ -1,6 +1,6 @@
 # Kartify API - Reviews
 ## Overview
-Kartify API is a backend responsible for serving millions of records at scale to an e-commerce front-end. This particular module of the API, Reviews, contains data regarding user reviews for over a million products. 
+Kartify API is a back-end responsible for serving millions of records at scale to an e-commerce front-end. This particular module of the API, Reviews, contains data regarding user reviews for over a million products. 
 
 ### Table of Contents 
 [Description](#Description)
